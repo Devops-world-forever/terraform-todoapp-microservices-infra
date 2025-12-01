@@ -1,18 +1,23 @@
 name: "dev_TF_infra_microservices"
 
-on: workflow_dispatch 
-  # push: 
-  #   branches:
-  #     - feature/*
-  #     - main
-    
+# on: workflow_dispatch
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+    - main
+
+      
 permissions:
   id-token: write
   contents: read
 
 jobs:
-  terraformInit:
-    name: terrafrom-init
+  terraformInitPlan:
+    name: terrafrom-init-plan
     runs-on: self-hosted
     steps:
       - name: Checkout
@@ -47,5 +52,33 @@ jobs:
         run: terraform plan -no-color -input=false
         continue-on-error: true
         working-directory: Environments/Dev
+
+  terraform-apply:
+    runs-on: self-hosted
+    if: github.refs == 'refs/heads/main'
+    needs: terraformInitPlan
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.0
+
+      - name: Azure Login
+        uses: Azure/login@v2.3.0
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Terraform Init
+        id: init
+        run: terraform init -input=false
+        working-directory: Environments/Dev
+
+      - name: Terraform Apply
+        id: apply
+        run: terraform apply --auto-approve
+        continue-on-error: true
+        working-directory: Environments/Dev
+    
+  
       
  
