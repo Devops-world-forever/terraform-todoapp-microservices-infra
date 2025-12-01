@@ -38,3 +38,4 @@ module "aks_cluster" {
   cluster_details = var.cluster_details
   common_tags = local.common_tags
 }
+
